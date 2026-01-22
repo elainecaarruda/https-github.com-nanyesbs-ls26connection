@@ -7,21 +7,37 @@ import AdminConsole from './components/AdminConsole';
 import { Participant, ViewMode, Country } from './types';
 import { api } from './services/api';
 import { COUNTRY_LIST } from './constants';
-import { Search, ShieldCheck, Users, Loader2, Filter, AlertTriangle, XCircle, Briefcase, Building, LayoutGrid, Globe } from 'lucide-react';
+import { Search, ShieldCheck, Users, Loader2, LayoutGrid, Moon, Sun, Globe, Building, Briefcase } from 'lucide-react';
 
 const App: React.FC = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('directory');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('ls_theme');
+    return saved ? saved === 'dark' : false;
+  });
   
+  const [isAdminAuthorized, setIsAdminAuthorized] = useState(false);
+  const [activeEditingId, setActiveEditingId] = useState<string | null>(null);
+
   const [filterCountryCode, setFilterCountryCode] = useState<string>('ALL');
   const [filterMinistry, setFilterMinistry] = useState<string>('ALL');
   const [filterRole, setFilterRole] = useState<string>('ALL');
 
   useEffect(() => { loadData(); }, []);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('ls_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('ls_theme', 'light');
+    }
+  }, [darkMode]);
 
   const loadData = async () => {
     try {
@@ -29,7 +45,7 @@ const App: React.FC = () => {
       const data = await api.getParticipants();
       setParticipants(data);
     } catch (err) {
-      setError('CORE OFFLINE: Secure identity stream unavailable.');
+      console.error('Core Offline');
     } finally {
       setLoading(false);
     }
@@ -67,154 +83,99 @@ const App: React.FC = () => {
   const handleDelete = async (id: string) => {
     await api.deleteParticipant(id);
     setParticipants(prev => prev.filter(p => p.id !== id));
-  };
-
-  const isAnyFilterActive = searchQuery !== '' || filterCountryCode !== 'ALL' || filterMinistry !== 'ALL' || filterRole !== 'ALL';
-
-  const resetFilters = () => {
-    setFilterCountryCode('ALL');
-    setFilterMinistry('ALL');
-    setFilterRole('ALL');
-    setSearchQuery('');
+    if (selectedParticipant?.id === id) setSelectedParticipant(null);
   };
 
   return (
-    <div className="min-h-screen bg-[#020202] text-white selection:bg-[#BB9446] selection:text-black font-montserrat">
+    <div className="min-h-screen transition-colors duration-500 bg-black dark:bg-white">
       <Header />
 
-      <main className="max-w-[1500px] mx-auto px-10 py-24">
-        {error && (
-          <div className="mb-16 p-8 bg-red-950/10 border border-red-900/30 text-red-500 text-[11px] font-black uppercase tracking-[0.6em] flex items-center gap-6 animate-pulse">
-            <AlertTriangle size={24} /> {error}
-          </div>
-        )}
+      <button 
+        onClick={() => setDarkMode(!darkMode)}
+        className="fixed bottom-10 right-10 z-[100] w-14 h-14 bg-white/10 dark:bg-black/5 backdrop-blur-lg border border-white/20 dark:border-black/10 rounded-full flex items-center justify-center shadow-modal hover:scale-110 active:scale-95 transition-all text-brand-heaven-gold"
+      >
+        {darkMode ? <Sun size={24} /> : <Moon size={24} />}
+      </button>
 
-        <div className="flex flex-col gap-20 mb-24">
-          {/* Dashboard Control Bar */}
-          <div className="flex flex-col xl:flex-row justify-between items-center gap-12 border-b border-white/5 pb-12">
-            <div className="flex gap-12">
+      <main className="max-w-[1400px] mx-auto px-8 py-20">
+        <div className="flex flex-col gap-16 mb-20">
+          <div className="flex flex-col xl:flex-row justify-between items-center gap-10 border-b border-white/10 dark:border-black/5 pb-10">
+            <div className="flex gap-10">
               <button 
                 onClick={() => setViewMode('directory')}
-                className={`text-[12px] tracking-[0.6em] font-black uppercase flex items-center gap-4 transition-all pb-2 border-b-2 ${viewMode === 'directory' ? 'text-[#BB9446] border-[#BB9446]' : 'text-white/20 border-transparent hover:text-white'}`}
+                className={`text-[11px] font-avenir-bold uppercase flex items-center gap-3 transition-all pb-2 border-b-2 ${viewMode === 'directory' ? 'text-brand-heaven-gold border-brand-heaven-gold' : 'text-white/40 dark:text-black/40 border-transparent'}`}
               >
-                <LayoutGrid size={18} /> CONNECTION DIRECTORY
+                <LayoutGrid size={16} /> Directory
               </button>
               <button 
                 onClick={() => setViewMode('admin')}
-                className={`text-[12px] tracking-[0.6em] font-black uppercase flex items-center gap-4 transition-all pb-2 border-b-2 ${viewMode === 'admin' ? 'text-[#BB9446] border-[#BB9446]' : 'text-white/20 border-transparent hover:text-white'}`}
+                className={`text-[11px] font-avenir-bold uppercase flex items-center gap-3 transition-all pb-2 border-b-2 ${viewMode === 'admin' ? 'text-brand-heaven-gold border-brand-heaven-gold' : 'text-white/40 dark:text-black/40 border-transparent'}`}
               >
-                <ShieldCheck size={18} /> STRATEGIC HUB
+                <ShieldCheck size={16} /> Admin {isAdminAuthorized && <span className="w-1.5 h-1.5 rounded-full bg-green-500 ml-1" />}
               </button>
             </div>
 
             {viewMode === 'directory' && (
-              <div className="flex items-center gap-6 w-full xl:w-auto">
-                <div className="relative w-full xl:w-[450px] group">
-                  <Search size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-[#BB9446] transition-colors" />
-                  <input 
-                    type="text"
-                    placeholder="LOCATE IDENTITY NODES..."
-                    className="w-full bg-white/[0.03] border border-white/10 p-5 pl-14 text-[11px] font-bold tracking-[0.3em] uppercase focus:border-[#BB9446] transition-all outline-none"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                {isAnyFilterActive && (
-                  <button 
-                    onClick={resetFilters}
-                    className="p-5 border border-white/5 text-white/20 hover:text-[#BB9446] hover:border-[#BB9446]/30 transition-all flex items-center gap-3 group"
-                    title="Clear All Protocols"
-                  >
-                    <XCircle size={20} className="group-hover:rotate-90 transition-transform" />
-                  </button>
-                )}
+              <div className="relative w-full xl:w-[350px]">
+                <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-heaven-gold" />
+                <input 
+                  type="text"
+                  placeholder="Search participants..."
+                  className="w-full bg-white/5 dark:bg-black/5 border border-white/10 dark:border-black/5 p-3 pl-11 rounded-button text-[12px] font-avenir-medium text-white dark:text-black outline-none focus:border-brand-heaven-gold transition-all"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
             )}
           </div>
 
-          {/* Tactical Filters Shell */}
-          {viewMode === 'directory' && !loading && participants.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-16 bg-[#030303] border border-white/5 p-10 rounded-sm shadow-xl">
-              {/* Hub Network Filter */}
-              <div className="space-y-6">
-                <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.6em] flex items-center gap-3">
-                  <Globe size={12} className="text-[#BB9446]" /> GEOGRAPHIC HUB NODES
+          {viewMode === 'directory' && !loading && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 bg-white/5 dark:bg-black/5 border border-white/5 dark:border-black/5 p-8 rounded-card shadow-card">
+              <div className="space-y-4">
+                <span className="text-[9px] font-avenir-bold text-brand-heaven-gold uppercase flex items-center gap-2">
+                  <Globe size={12} /> Geographic Hub
                 </span>
-                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar pr-4">
-                  <button 
-                    onClick={() => setFilterCountryCode('ALL')} 
-                    className={`px-4 py-2 text-[10px] font-black border tracking-widest transition-all ${filterCountryCode === 'ALL' ? 'bg-[#BB9446] text-black border-[#BB9446]' : 'bg-transparent text-white/40 border-white/10 hover:border-white/30'}`}
-                  >
-                    GLOBAL
-                  </button>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => setFilterCountryCode('ALL')} className={`px-3 py-1.5 text-[10px] font-avenir-medium rounded-button border ${filterCountryCode === 'ALL' ? 'bg-brand-heaven-gold text-white border-brand-heaven-gold' : 'border-white/10 dark:border-black/10 text-white dark:text-black opacity-50'}`}>Global</button>
                   {activeCountries.map(c => (
-                    <button 
-                      key={c.code} 
-                      onClick={() => setFilterCountryCode(c.code)} 
-                      className={`px-4 py-2 text-[10px] font-black border tracking-widest transition-all flex items-center gap-2 ${filterCountryCode === c.code ? 'bg-white text-black border-white' : 'bg-white/[0.02] text-white/40 border-white/5 hover:border-[#BB9446]/40 hover:text-white'}`}
-                    >
-                      <span>{c.flag}</span> {c.code}
-                    </button>
+                    <button key={c.code} onClick={() => setFilterCountryCode(c.code)} className={`px-3 py-1.5 text-[10px] font-avenir-medium rounded-button border ${filterCountryCode === c.code ? 'bg-white dark:bg-black text-black dark:text-white border-white dark:border-black' : 'border-white/10 dark:border-black/10 text-white dark:text-black opacity-50'}`}>{c.code}</button>
                   ))}
                 </div>
               </div>
 
-              {/* Organization Logic Filter */}
-              <div className="space-y-6">
-                <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.6em] flex items-center gap-3">
-                  <Building size={12} className="text-[#BB9446]" /> MINISTRY ORIENTATION
+              <div className="space-y-4">
+                <span className="text-[9px] font-avenir-bold text-brand-heaven-gold uppercase flex items-center gap-2">
+                  <Building size={12} /> Ministry
                 </span>
-                <select 
-                  value={filterMinistry} 
-                  onChange={e => setFilterMinistry(e.target.value)} 
-                  className="w-full bg-black border border-white/10 p-4 text-[10px] text-white/70 font-black tracking-widest uppercase outline-none focus:border-[#BB9446] cursor-pointer"
-                >
-                  <option value="ALL">ALL STRATEGIC ORGANIZATIONS</option>
-                  {uniqueMinistries.map(m => <option key={m} value={m}>{m.toUpperCase()}</option>)}
+                <select value={filterMinistry} onChange={e => setFilterMinistry(e.target.value)} className="w-full bg-black/40 dark:bg-white border border-white/10 dark:border-black/10 p-3 rounded-button text-[11px] font-avenir-medium text-white dark:text-black outline-none focus:border-brand-heaven-gold">
+                  <option value="ALL">All Organizations</option>
+                  {uniqueMinistries.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
 
-              {/* Capacity Filter */}
-              <div className="space-y-6">
-                <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.6em] flex items-center gap-3">
-                  <Briefcase size={12} className="text-[#BB9446]" /> LEADERSHIP CAPACITY
+              <div className="space-y-4">
+                <span className="text-[9px] font-avenir-bold text-brand-heaven-gold uppercase flex items-center gap-2">
+                  <Briefcase size={12} /> Capacity
                 </span>
-                <select 
-                  value={filterRole} 
-                  onChange={e => setFilterRole(e.target.value)} 
-                  className="w-full bg-black border border-white/10 p-4 text-[10px] text-white/70 font-black tracking-widest uppercase outline-none focus:border-[#BB9446] cursor-pointer"
-                >
-                  <option value="ALL">ALL LEADERSHIP ROLES</option>
-                  {uniqueRoles.map(r => <option key={r} value={r}>{r.toUpperCase()}</option>)}
+                <select value={filterRole} onChange={e => setFilterRole(e.target.value)} className="w-full bg-black/40 dark:bg-white border border-white/10 dark:border-black/10 p-3 rounded-button text-[11px] font-avenir-medium text-white dark:text-black outline-none focus:border-brand-heaven-gold">
+                  <option value="ALL">All Leadership Roles</option>
+                  {uniqueRoles.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
             </div>
           )}
         </div>
 
-        {/* Dynamic Display Area */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-60">
-            <Loader2 className="animate-spin text-[#BB9446] mb-8" size={48} />
-            <p className="text-[11px] tracking-[0.8em] text-white/20 uppercase font-black animate-pulse">Establishing Secure Stream...</p>
+          <div className="flex flex-col items-center justify-center py-40">
+            <Loader2 className="animate-spin text-brand-heaven-gold mb-4" size={32} />
+            <p className="text-[10px] text-brand-heaven-gold uppercase font-avenir-medium tracking-widest">Synchronizing Identity Stream...</p>
           </div>
         ) : viewMode === 'directory' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-12">
-            {filteredParticipants.length > 0 ? (
-              filteredParticipants.map(p => (
-                <ParticipantCard key={p.id} participant={p} onClick={() => setSelectedParticipant(p)} />
-              ))
-            ) : (
-              <div className="col-span-full py-60 text-center border border-dashed border-white/10 opacity-30 group hover:opacity-100 transition-opacity">
-                <p className="text-[14px] font-black uppercase tracking-[1em] mb-8">IDENTITY QUERY FAILED</p>
-                <button 
-                  onClick={resetFilters} 
-                  className="px-10 py-4 border border-[#BB9446] text-[10px] font-black text-[#BB9446] uppercase tracking-[0.5em] hover:bg-[#BB9446] hover:text-black transition-all"
-                >
-                  REBOOT FILTERS
-                </button>
-              </div>
-            )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {filteredParticipants.map(p => (
+              <ParticipantCard key={p.id} participant={p} onClick={() => setSelectedParticipant(p)} />
+            ))}
           </div>
         ) : (
           <AdminConsole 
@@ -222,36 +183,32 @@ const App: React.FC = () => {
             onAdd={handleAdd}
             onUpdate={handleUpdate}
             onDelete={handleDelete}
+            isAuthorized={isAdminAuthorized}
+            onAuthorize={setIsAdminAuthorized}
+            editingId={activeEditingId}
+            onSetEditingId={setActiveEditingId}
           />
         )}
       </main>
 
-      {/* Cinematic Footer Overlay */}
-      <footer className="mt-60 border-t border-white/5 py-48 bg-[#010101] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5 pointer-events-none flex items-center justify-center">
-          <ShieldCheck size={600} strokeWidth={0.5} className="text-white" />
-        </div>
-        
-        <div className="max-w-[1500px] mx-auto px-10 text-center space-y-20 relative z-10">
-          <div className="space-y-8">
-            <p className="font-didot italic text-4xl md:text-6xl text-white/30 leading-[1.2] max-w-5xl mx-auto tracking-tight">
-              "History is not defined by the masses, but by the dedicated minority who choose to lead through purpose."
-            </p>
-            <div className="w-32 h-[1px] bg-[#BB9446]/40 mx-auto" />
-          </div>
-          
-          <div className="space-y-4">
-            <div className="text-[12px] font-black tracking-[1em] text-white/20 uppercase">LEADERS' SUMMIT 2026</div>
-            <div className="flex items-center justify-center gap-4 text-[9px] font-bold tracking-[0.5em] text-[#BB9446]/40 uppercase">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#BB9446]/20 animate-pulse" />
-              SECURE INFRASTRUCTURE STUTTGART HUB-021-X
-              <span className="w-1.5 h-1.5 rounded-full bg-[#BB9446]/20 animate-pulse" />
-            </div>
+      <footer className="mt-40 border-t border-white/5 dark:border-black/5 py-32 bg-black dark:bg-white text-center">
+        <div className="max-w-[1400px] mx-auto px-8 space-y-10">
+          <p className="font-didot italic text-3xl text-white/30 dark:text-black/20 max-w-3xl mx-auto leading-relaxed">
+            "History is defined by the dedicated few who lead with purpose."
+          </p>
+          <div className="text-[10px] font-avenir-bold text-brand-heaven-gold uppercase tracking-[4px]">
+            Leaders' Summit 2026 Stuttgart
           </div>
         </div>
       </footer>
 
-      <ProfileModal participant={selectedParticipant} onClose={() => setSelectedParticipant(null)} />
+      <ProfileModal 
+        participant={selectedParticipant} 
+        onClose={() => setSelectedParticipant(null)} 
+        isAdmin={isAdminAuthorized}
+        onDelete={handleDelete}
+        onEdit={(id) => { setSelectedParticipant(null); setActiveEditingId(id); setViewMode('admin'); }}
+      />
     </div>
   );
 };

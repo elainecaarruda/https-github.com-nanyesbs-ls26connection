@@ -1,200 +1,154 @@
 
 import React, { useState, useEffect } from 'react';
 import { Participant } from '../types';
-import { X, Mail, Globe, Phone, ArrowRightLeft, User, Sparkles, Calendar, ExternalLink, Shield } from 'lucide-react';
+import { X, Mail, Globe, Phone, User, Sparkles, Shield } from 'lucide-react';
 import { getIdentityPlaceholder, HIGH_QUALITY_PLACEHOLDER } from '../constants';
 
 interface ProfileModalProps {
   participant: Participant | null;
   onClose: () => void;
+  isAdmin?: boolean;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-const ProfileModal: React.FC<ProfileModalProps> = ({ participant, onClose }) => {
+const ProfileModal: React.FC<ProfileModalProps> = ({ participant, onClose, isAdmin, onEdit, onDelete }) => {
   const [isShowingPromo, setIsShowingPromo] = useState(false);
+  const [imgSrc, setImgSrc] = useState<string>('');
+  const [fallbackStage, setFallbackStage] = useState<number>(0);
 
-  // Keyboard support: Close on ESC
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
+      if (event.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
+  useEffect(() => {
+    if (participant) {
+      const initialUrl = isShowingPromo && participant.promoPhotoUrl ? participant.promoPhotoUrl : participant.photoUrl;
+      setImgSrc(initialUrl || getIdentityPlaceholder(participant.name));
+      setFallbackStage(initialUrl ? 0 : 1);
+    }
+  }, [participant, isShowingPromo]);
+
   if (!participant) return null;
 
-  // Logic for dual-tone name: First word white, others stone-700
-  const nameParts = participant.name.split(' ');
-  const firstName = nameParts[0];
-  const otherNames = nameParts.slice(1).join(' ');
-
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const target = e.currentTarget;
-    if (target.getAttribute('data-fallback-triggered')) {
-      target.src = HIGH_QUALITY_PLACEHOLDER;
-      return;
+  const handleImageError = () => {
+    if (fallbackStage === 0) {
+      setImgSrc(getIdentityPlaceholder(participant.name));
+      setFallbackStage(1);
+    } else if (fallbackStage === 1) {
+      setImgSrc(HIGH_QUALITY_PLACEHOLDER);
+      setFallbackStage(2);
     }
-    target.setAttribute('data-fallback-triggered', 'true');
-    target.src = getIdentityPlaceholder(participant.name);
   };
-
-  const portraitImage = participant.photoUrl || getIdentityPlaceholder(participant.name);
-  const activeImage = isShowingPromo && participant.promoPhotoUrl ? participant.promoPhotoUrl : portraitImage;
-
-  const displayEvents = participant.events || [
-    "Regional Leadership Gathering '26",
-    "Digital Missions Forum",
-    "Stuttgart Strategic Hub Launch"
-  ];
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-12 bg-black/98 backdrop-blur-3xl animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 bg-black/80 dark:bg-white/90 backdrop-blur-md animate-fade-in overflow-y-auto"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      {/* Modal Container - Balanced "Square-ish" Professional Ratio */}
-      <div className="relative w-full max-w-5xl bg-[#080808] border border-white/10 overflow-hidden flex flex-col md:flex-row shadow-[0_0_100px_rgba(0,0,0,1)] rounded-none">
+      <div className="relative w-full max-w-5xl bg-[#0a0a0a] dark:bg-white border border-white/5 dark:border-stone-200 overflow-hidden flex flex-col md:row rounded-modal shadow-modal transition-colors duration-500">
         
-        {/* Close Button - Integrated into Design */}
         <button 
           onClick={onClose}
-          className="absolute top-6 right-6 z-50 p-2 text-white/20 hover:text-[#BB9446] transition-all duration-300"
-          aria-label="Close"
+          className="absolute top-6 right-6 z-50 p-2 text-white/50 dark:text-stone-300 hover:text-brand-heaven-gold transition-colors"
         >
-          <X size={24} strokeWidth={1.5} />
+          <X size={24} />
         </button>
 
-        {/* LEFT COLUMN: VISUAL PORTAL */}
-        <div className="relative w-full md:w-[45%] bg-black flex flex-col overflow-hidden border-b md:border-b-0 md:border-r border-white/5">
-          <div className="relative aspect-square md:aspect-auto md:h-full overflow-hidden group">
-            <img 
-              key={activeImage}
-              src={activeImage} 
-              alt={participant.name}
-              onError={handleImageError}
-              className={`w-full h-full object-cover transition-all duration-1000 ease-in-out scale-100 group-hover:scale-105 ${isShowingPromo ? 'brightness-100' : 'brightness-90 group-hover:brightness-100'}`}
-            />
-            
-            {/* Elegant Gradient Wash */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-transparent opacity-60" />
-            
-            {/* Technical Stamp */}
-            <div className="absolute top-8 left-8 flex flex-col gap-1 pointer-events-none opacity-30">
-              <span className="text-[6px] font-avenir-medium text-[#BB9446] tracking-[0.5em] uppercase">Auth Verification</span>
-              <span className="text-[8px] font-avenir-roman text-white tracking-[0.2em] uppercase">Identity Hub 26</span>
+        <div className="flex flex-col md:flex-row w-full h-full">
+          <div className="relative w-full md:w-[40%] bg-black dark:bg-stone-100 flex flex-col overflow-hidden border-b md:border-b-0 md:border-r border-white/5 dark:border-stone-200">
+            <div className="relative aspect-square md:aspect-auto md:h-full overflow-hidden">
+              <img 
+                key={imgSrc}
+                src={imgSrc} 
+                alt={participant.name}
+                onError={handleImageError}
+                className={`w-full h-full object-cover transition-all duration-700 ${isShowingPromo ? 'brightness-100' : 'brightness-90 dark:brightness-100'}`}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 dark:from-white/20 via-transparent to-transparent" />
             </div>
-          </div>
 
-          {/* Interaction Switcher - Refined Minimalism */}
-          {participant.promoPhotoUrl && (
-            <div className="absolute bottom-8 left-0 w-full px-8 z-20">
-              <button 
-                onClick={() => setIsShowingPromo(!isShowingPromo)}
-                className="w-full py-4 bg-white/[0.03] backdrop-blur-xl border border-white/10 hover:border-[#BB9446]/40 text-white text-[9px] font-avenir-medium uppercase tracking-[0.4em] transition-all duration-500 flex items-center justify-center gap-4 group/btn"
-              >
-                {isShowingPromo ? <User size={12} className="text-[#BB9446]" /> : <Sparkles size={12} className="text-[#BB9446]" />}
-                <span>{isShowingPromo ? 'Identity Profile' : 'Promotional Asset'}</span>
-                <ArrowRightLeft size={10} className="opacity-20 group-hover/btn:rotate-180 transition-transform duration-700" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT COLUMN: LEADERSHIP DATA */}
-        <div className="w-full md:w-[55%] p-8 md:p-14 lg:p-16 flex flex-col bg-[#080808] overflow-y-auto max-h-[85vh] custom-scrollbar">
-          
-          {/* Geolocation Protocol - Fixed Flag Color */}
-          <div className="mb-10 flex items-center gap-4 animate-fade-in">
-            <span className="text-3xl transition-transform hover:scale-110 cursor-default drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
-              {participant.country.flag}
-            </span>
-            <div className="h-px w-6 bg-[#BB9446]/30" />
-            <span className="text-[10px] font-avenir-medium text-[#BB9446] tracking-[0.6em] uppercase">
-              {participant.country.name} Node
-            </span>
-          </div>
-
-          {/* Primary Identity Header */}
-          <div className="mb-12">
-            <h2 className="text-5xl md:text-6xl font-black italic font-didot leading-[0.9] tracking-tighter mb-8">
-              <span className="text-white block">{firstName}</span>
-              <span className="text-stone-800 block -mt-1">{otherNames}</span>
-            </h2>
-            
-            <div className="space-y-3">
-              <div className="flex items-baseline gap-4">
-                <span className="text-[7px] font-avenir-medium text-white/20 uppercase tracking-[0.4em]">Org</span>
-                <span className="text-[11px] font-avenir-medium text-white tracking-[0.15em] uppercase">{participant.organization}</span>
-              </div>
-              <div className="flex items-baseline gap-4">
-                <span className="text-[7px] font-avenir-medium text-white/20 uppercase tracking-[0.4em]">Role</span>
-                <span className="text-lg font-avenir-roman italic text-[#BB9446] font-didot tracking-wide">{participant.title}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Biography Context - Optimized for Readability */}
-          <div className="mb-16">
-             <div className="h-px w-12 bg-[#BB9446]/40 mb-8" />
-             <p className="text-white/70 text-lg leading-[1.85] font-avenir-roman font-light tracking-wide max-w-lg">
-               {participant.bio}
-             </p>
-          </div>
-
-          {/* Connectivity Protocols */}
-          <div className="mb-16">
-            <h4 className="text-[8px] font-avenir-medium text-white/20 tracking-[0.8em] uppercase mb-10 flex items-center gap-3">
-              <Shield size={10} className="text-[#BB9446]/40" /> Contact Terminal
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-10 gap-x-12">
-              {[
-                { icon: Phone, label: 'Secure Line', value: participant.phone, href: `tel:${participant.phone}` },
-                { icon: Mail, label: 'Access Point', value: participant.email, href: `mailto:${participant.email}` },
-                { icon: Globe, label: 'Web Hub', value: participant.website.replace('https://', ''), href: participant.website }
-              ].map((item, i) => (
-                <a 
-                  key={i} 
-                  href={item.href}
-                  className="group flex items-center gap-5 transition-all"
+            {participant.promoPhotoUrl && (
+              <div className="absolute bottom-6 left-0 w-full px-6 z-20">
+                <button 
+                  onClick={() => {
+                    setIsShowingPromo(!isShowingPromo);
+                    setFallbackStage(0);
+                  }}
+                  className="w-full py-3 bg-white/10 dark:bg-black/5 backdrop-blur-lg border border-white/10 dark:border-black/5 rounded-button text-white dark:text-black text-[10px] font-avenir-medium uppercase flex items-center justify-center gap-3 transition-all hover:bg-brand-heaven-gold hover:text-white"
                 >
-                  <div className="w-10 h-10 rounded-none border border-white/5 bg-white/[0.02] flex items-center justify-center text-white/30 group-hover:text-[#BB9446] group-hover:border-[#BB9446]/40 transition-all duration-500">
-                    <item.icon size={16} strokeWidth={1.2} />
-                  </div>
+                  {isShowingPromo ? <User size={14} /> : <Sparkles size={14} />}
+                  <span>{isShowingPromo ? 'Identity Profile' : 'Promotional Asset'}</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="w-full md:w-[60%] p-8 md:p-12 lg:p-14 flex flex-col bg-[#0a0a0a] dark:bg-white overflow-y-auto max-h-[80vh] custom-scrollbar">
+            
+            <div className="mb-8 flex flex-wrap gap-6">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{participant.country.flag}</span>
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-avenir-bold text-brand-heaven-gold uppercase tracking-wider">Resident Node</span>
+                  <span className="text-[10px] font-avenir-medium text-white dark:text-black uppercase">{participant.country.name}</span>
+                </div>
+              </div>
+              
+              {participant.country.code !== participant.nationality.code && (
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{participant.nationality.flag}</span>
                   <div className="flex flex-col">
-                    <span className="text-[7px] font-avenir-medium text-white/20 uppercase tracking-[0.3em] mb-1">
-                      {item.label}
-                    </span>
-                    <span className="text-[11px] font-avenir-roman text-white/60 group-hover:text-white transition-colors tracking-widest uppercase truncate max-w-[140px]">
-                      {item.value}
-                    </span>
+                    <span className="text-[8px] font-avenir-bold text-brand-heaven-gold uppercase tracking-wider">Nationality</span>
+                    <span className="text-[10px] font-avenir-medium text-white dark:text-black uppercase">{participant.nationality.name}</span>
                   </div>
-                </a>
+                </div>
+              )}
+            </div>
+
+            <div className="mb-10">
+              <h2 className="text-4xl md:text-5xl font-avenir-bold text-white dark:text-black leading-tight mb-2">
+                {participant.name}
+              </h2>
+              <p className="text-lg font-didot italic text-brand-heaven-gold">{participant.title}</p>
+              <p className="text-[12px] font-avenir-roman text-white dark:text-black opacity-60 dark:opacity-50 uppercase mt-1">
+                {participant.organization}
+              </p>
+            </div>
+
+            <div className="mb-10">
+              <div className="w-12 h-0.5 bg-brand-heaven-gold" />
+            </div>
+
+            {isAdmin && (
+              <div className="mb-10 p-5 bg-white/5 dark:bg-stone-50 border border-brand-heaven-gold/20 rounded-button">
+                <h4 className="text-[9px] font-avenir-bold text-brand-heaven-gold uppercase mb-4 flex items-center gap-2">
+                  <Shield size={12} /> Management Protocol
+                </h4>
+                <div className="flex gap-3">
+                  <button onClick={() => onEdit?.(participant.id)} className="flex-1 py-3 bg-brand-heaven-gold text-white rounded-button text-[10px] font-avenir-bold uppercase transition-all hover:brightness-110">Edit</button>
+                  <button onClick={() => onDelete?.(participant.id)} className="flex-1 py-3 border border-red-500/30 text-red-500 rounded-button text-[10px] font-avenir-bold uppercase hover:bg-red-500 hover:text-white transition-all">Delete</button>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-auto">
+              {[
+                { icon: Phone, label: 'Secure Line', value: participant.phone },
+                { icon: Mail, label: 'Access Point', value: participant.email },
+                { icon: Globe, label: 'Web Hub', value: participant.website.replace('https://', '') }
+              ].map((item, i) => (
+                <div key={i} className="flex flex-col">
+                  <span className="text-[8px] font-avenir-medium text-brand-heaven-gold uppercase mb-1">{item.label}</span>
+                  <span className="text-[12px] font-avenir-roman text-white dark:text-black opacity-80 dark:opacity-70 truncate">{item.value}</span>
+                </div>
               ))}
             </div>
           </div>
-
-          {/* Impact Timeline Footer */}
-          <div className="mt-auto pt-10 border-t border-white/5">
-            <div className="space-y-8">
-              <h5 className="text-[9px] font-avenir-medium text-[#BB9446] tracking-[0.4em] uppercase flex items-center gap-3">
-                <Calendar size={12} strokeWidth={1.5} /> Deployment Timeline '26
-              </h5>
-              <div className="grid grid-cols-1 gap-4">
-                {displayEvents.map((ev, i) => (
-                  <div key={i} className="flex items-center justify-between group/line">
-                    <div className="flex items-center gap-3">
-                      <div className="w-1 h-1 bg-[#BB9446]/40 rounded-full" />
-                      <span className="text-[10px] font-avenir-roman text-white/40 group-hover/line:text-white/80 transition-colors tracking-wide">{ev}</span>
-                    </div>
-                    <ExternalLink size={10} className="text-[#BB9446]/20 group-hover/line:text-[#BB9446] opacity-0 group-hover/line:opacity-100 transition-all" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>

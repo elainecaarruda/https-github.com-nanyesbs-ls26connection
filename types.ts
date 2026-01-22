@@ -10,15 +10,15 @@ export interface Participant {
   name: string;
   title: string;
   organization: string;
-  country: Country;
-  bio: string;
+  country: Country; // Residency/Current Node
+  nationality: Country; // Origin/Heritage
   testimony: string;
   phone: string;
   email: string;
   website: string;
   photoUrl: string;
-  promoPhotoUrl?: string; // New field for promotional high-res assets
-  events?: string[]; // Events for the impact block
+  promoPhotoUrl?: string;
+  events?: string[];
 }
 
 export type ViewMode = 'directory' | 'admin';

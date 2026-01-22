@@ -2,15 +2,11 @@
 import { Participant, Country } from './types';
 
 export const ADMIN_PASSWORD = '123';
-export const BRAND_GOLD = '#BB9446';
-export const BRAND_GOLD_LIGHT = '#D4AF37';
-export const BRAND_GOLD_DARK = '#8e6d2b';
+export const BRAND_GOLD = '#BB9446'; // Heaven Gold
+export const BRAND_GOLD_LIGHT = '#D3B962'; // Gold
+export const BRAND_GOLD_DARK = '#9C7B3A';
 export const BRAND_BLACK = '#050505';
 
-/**
- * Secondary high-fidelity fallback for extreme cases where SVG generation 
- * or primary asset streams fail completely.
- */
 export const HIGH_QUALITY_PLACEHOLDER = "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=1000&auto=format&fit=crop";
 
 export const getIdentityPlaceholder = (name: string): string => {
@@ -23,49 +19,36 @@ export const getIdentityPlaceholder = (name: string): string => {
       .toUpperCase()
       .slice(0, 2) || 'LS';
 
+    // Premium SVG Avatar Design: Minimalist luxury with Heaven Gold gradients
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
         <defs>
-          <linearGradient id="goldEdge" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:${BRAND_GOLD_LIGHT};stop-opacity:1" />
-            <stop offset="50%" style="stop-color:${BRAND_GOLD};stop-opacity:1" />
+          <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:${BRAND_GOLD};stop-opacity:1" />
             <stop offset="100%" style="stop-color:${BRAND_GOLD_DARK};stop-opacity:1" />
           </linearGradient>
           <radialGradient id="innerGlow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-            <stop offset="0%" style="stop-color:${BRAND_GOLD_LIGHT};stop-opacity:0.2" />
+            <stop offset="0%" style="stop-color:${BRAND_GOLD};stop-opacity:0.15" />
             <stop offset="100%" style="stop-color:black;stop-opacity:0" />
           </radialGradient>
         </defs>
-        <rect width="100" height="100" fill="${BRAND_BLACK}"/>
-        <circle cx="50" cy="50" r="46" fill="url(#innerGlow)"/>
-        <circle cx="50" cy="50" r="44" fill="none" stroke="url(#goldEdge)" stroke-width="0.5" opacity="0.4"/>
-        <circle cx="50" cy="50" r="40" fill="none" stroke="url(#goldEdge)" stroke-width="2" />
-        
-        <text 
-          x="50" 
-          y="50" 
-          fill="${BRAND_GOLD}" 
-          opacity="0.03" 
-          font-family="'Bodoni Moda', serif" 
-          font-weight="900" 
-          font-size="65" 
-          text-anchor="middle" 
-          dominant-baseline="central"
-        >LS</text>
-
+        <rect width="100" height="100" fill="#0A0A0A"/>
+        <circle cx="50" cy="50" r="48" fill="url(#innerGlow)"/>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="url(#goldGradient)" stroke-width="0.5" opacity="0.3" />
+        <circle cx="50" cy="50" r="38" fill="none" stroke="url(#goldGradient)" stroke-width="1.5" />
         <text 
           x="50%" 
           y="50%" 
-          fill="url(#goldEdge)" 
+          fill="url(#goldGradient)" 
           font-family="'Bodoni Moda', serif" 
-          font-weight="700" 
-          font-size="34" 
+          font-weight="400" 
+          font-size="32" 
           text-anchor="middle" 
-          dominant-baseline="central"
-          style="letter-spacing: -2px; text-transform: uppercase;"
-        >${initials}</text>
-        
-        <path d="M50 10 L50 15 M90 50 L85 50 M50 90 L50 85 M10 50 L15 50" stroke="${BRAND_GOLD}" stroke-width="1" opacity="0.3" />
+          dominant-baseline="central" 
+          style="letter-spacing: 0px; text-transform: uppercase; font-style: italic;"
+        >
+          ${initials}
+        </text>
       </svg>
     `.trim();
 
@@ -91,7 +74,8 @@ export const COUNTRY_LIST: Country[] = [
   { name: 'United States', flag: '🇺🇸', code: 'US' },
   { name: 'Slovenia', flag: '🇸🇮', code: 'SI' },
   { name: 'United Arab Emirates', flag: '🇦🇪', code: 'AE' },
-  { name: 'Luxembourg', flag: '🇱🇺', code: 'LU' }
+  { name: 'Luxembourg', flag: '🇱🇺', code: 'LU' },
+  { name: 'Brazil', flag: '🇧🇷', code: 'BR' }
 ];
 
 export const INITIAL_PARTICIPANTS: Participant[] = [
@@ -101,7 +85,7 @@ export const INITIAL_PARTICIPANTS: Participant[] = [
     title: 'CEO',
     organization: 'Alpha & Omega Stiftung',
     country: { name: 'Germany', flag: '🇩🇪', code: 'DE' },
-    bio: 'Serial entrepreneur and visionary supporting international projects to build the kingdom of God.',
+    nationality: { name: 'Germany', flag: '🇩🇪', code: 'DE' },
     testimony: 'After 40 years of high-tech innovation, my greatest joy is seeing the Spirit transform lives across Europe.',
     phone: '+49 123 456789',
     email: 'matthias@example.org',
@@ -115,7 +99,7 @@ export const INITIAL_PARTICIPANTS: Participant[] = [
     title: 'Executive Director',
     organization: 'Europe For Christ',
     country: { name: 'Hungary', flag: '🇭🇺', code: 'HU' },
-    bio: 'Dedicated to mobilizing young leaders across Eastern Europe for sustainable community impact.',
+    nationality: { name: 'Hungary', flag: '🇭🇺', code: 'HU' },
     testimony: 'My journey started in Budapest, where I saw the transformative power of faith in rebuilding social fabrics.',
     phone: '+36 123 45678',
     email: 'anna@example.org',
@@ -129,7 +113,7 @@ export const INITIAL_PARTICIPANTS: Participant[] = [
     title: 'Director Partnerships',
     organization: 'Alpha EMENA',
     country: { name: 'United Arab Emirates', flag: '🇦🇪', code: 'AE' },
-    bio: 'Engaging with ministries and church networks across Europe, Middle East and Northern Africa.',
+    nationality: { name: 'Germany', flag: '🇩🇪', code: 'DE' },
     testimony: 'From a football hooligan to a man of God, my life is a testament to the radical grace found on an Alpha course.',
     phone: '+971 50 1234567',
     email: 'arnd@alpha.org',
